@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace Syslog_Sender
 {
@@ -61,52 +62,69 @@ namespace Syslog_Sender
         {
             statusLabel.Text = "";
 
-            if (targetTextBox.TextLength == 0)
-                return;
             string address = targetTextBox.Text;
-            const int timeout = 2000;
+            if (!(String.IsNullOrWhiteSpace(address)))
+            {
+                // Create and start the thread with an anonymous delegate using a lambda expression
+                Thread pingThread = new Thread(() => this.pingServer(address));
+                pingThread.Start();
+            }
+        }
+        
+        void SendButtonClick(object sender, EventArgs e)
+        {
+            statusLabel.Text = "";
+        }
+        void ExitToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            //this.Close();
+            Application.Exit();
 
-            //TODO: Worker-Thread
+        }
+        
+        // This method is called as a thread
+        private void pingServer(string address)
+        {
+            //bool result_var = false;
             
             try
             {
+                const int timeout = 2000;
                 Ping ping = new Ping();
                 PingReply pingReply = ping.Send(address, timeout);
 
                 switch (pingReply.Status)
                 {
                     case IPStatus.Success:
-                        statusLabel.Text = "Ok, " + address + " ist erreichbar.";
+                        //result_var = true;
+                        //statusLabel.Text = "Ok, " + address + " ist erreichbar.";
                         break;
                         
                     case IPStatus.TimedOut:
                     case IPStatus.TimeExceeded:
-                        statusLabel.Text = "Zeitüberschreitung!";
+                        //statusLabel.Text = "Zeitüberschreitung!";
+                        
                         break;
                     case IPStatus.DestinationHostUnreachable:
-                        statusLabel.Text = "Unerreichbar!";
+                        //statusLabel.Text = "Unerreichbar!";
                         break;
                     case IPStatus.HardwareError:
-                        statusLabel.Text = "Hardware-Fehler!";
+                        //statusLabel.Text = "Hardware-Fehler!";
                         break;
                     default:
-                        statusLabel.Text = "Nix Ping!";
+                        //statusLabel.Text = "Nix Ping!";
                         break;
                 }
             }
             catch (PingException)
             {
-               statusLabel.Text = "Ungültige Adresse!";
+               //statusLabel.Text = "Ungültige Adresse!";
+               //MessageBox.Show(ex.Message, "Ping", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
             catch (ArgumentException)
             {
-               statusLabel.Text = "Ungültige Adresse!";                
+               //statusLabel.Text = "Ungültige Adresse!";
             }
-        }
-        
-        void SendButtonClick(object sender, EventArgs e)
-        {
-            statusLabel.Text = "";          
-        }
+         }
     }
 }
