@@ -79,13 +79,24 @@ namespace Syslog_Sender
         {
             //this.Close();
             Application.Exit();
-
+        }
+        
+        // Update UI from within thread
+        public delegate void updateStatusDelegate(bool ok, string msg);
+        void updateStatus(bool ok, string msg)
+        {
+            if (ok)
+                statusLabel.ForeColor = System.Drawing.Color.Green;
+            else
+                statusLabel.ForeColor = System.Drawing.Color.Red;
+            statusLabel.Text = msg;
         }
         
         // This method is called as a thread
-        private void pingServer(string address)
+        void pingServer(string address)
         {
-            //bool result_var = false;
+            bool result_var = false;
+            string result_msg;
             
             try
             {
@@ -96,34 +107,34 @@ namespace Syslog_Sender
                 switch (pingReply.Status)
                 {
                     case IPStatus.Success:
-                        //result_var = true;
-                        //statusLabel.Text = "Ok, " + address + " ist erreichbar.";
+                        result_var = true;
+                        result_msg = "Ping: " + address + " is reachable.";
                         break;
-                        
                     case IPStatus.TimedOut:
                     case IPStatus.TimeExceeded:
-                        //statusLabel.Text = "Zeitüberschreitung!";
-                        
+                        result_msg = "Ping: Request timed out!";
                         break;
                     case IPStatus.DestinationHostUnreachable:
-                        //statusLabel.Text = "Unerreichbar!";
+                        result_msg = "Ping: Destination unreachable!";
                         break;
                     case IPStatus.HardwareError:
-                        //statusLabel.Text = "Hardware-Fehler!";
+                        result_msg = "Ping: Transmit failed!";
                         break;
                     default:
-                        //statusLabel.Text = "Nix Ping!";
+                        result_msg = "Ping: Error!";
                         break;
                 }
+                this.Invoke(new updateStatusDelegate(updateStatus), new object[] {result_var, result_msg});
             }
-            catch (PingException)
+            catch (PingException ex)
             {
-               //statusLabel.Text = "Ungültige Adresse!";
-               //MessageBox.Show(ex.Message, "Ping", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                result_msg = "Ping: Exception occured!"; //TODO ex.Message
+                this.Invoke(new updateStatusDelegate(updateStatus), new object[] {false, result_msg});
             }
-            catch (ArgumentException)
+            catch (ArgumentException ex)
             {
-               //statusLabel.Text = "Ungültige Adresse!";
+                result_msg = "Ping: Unknown argument!";  //TODO ex.Message
+                this.Invoke(new updateStatusDelegate(updateStatus), new object[] {false, result_msg});
             }
          }
     }
